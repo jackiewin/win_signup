@@ -5,8 +5,8 @@
 namespace XoopsModules\Win_signup;
 
 use XoopsModules\Tadtools\FormValidator;
-use XoopsModules\Tadtools\Utility;
 use XoopsModules\Tadtools\My97DatePicker;
+use XoopsModules\Tadtools\Utility;
 
 class Win_signup_actions
 {
@@ -23,13 +23,13 @@ class Win_signup_actions
     public static function create($id = '')
     {
         global $xoopsTpl, $xoopsUser;
-        if(!$_SESSION['win_signup_adm']){
-            redirect_header($_SERVER['PHP_SELF'], 3, "非管理員，無法執行此動作");
+        if (!$_SESSION['win_signup_adm']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "您沒有權限使用此功能");
         }
         //抓取預設值
         $db_values = empty($id) ? [] : self::get($id);
-        $db_values['number']=empty($id)?50:$db_values['number'];
-        $db_values['enable']=empty($id)?1:$db_values['enable'];
+        $db_values['number'] = empty($id) ? 50 : $db_values['number'];
+        $db_values['enable'] = empty($id) ? 1 : $db_values['enable'];
 
         foreach ($db_values as $col_name => $col_val) {
             $$col_name = $col_val;
@@ -49,7 +49,7 @@ class Win_signup_actions
         $token_form = $token->render();
         $xoopsTpl->assign("token_form", $token_form);
 
-        $uid = $xoopsUser?$xoopsUser->uid():0;
+        $uid = $xoopsUser ? $xoopsUser->uid() : 0;
         $xoopsTpl->assign("uid", $uid);
 
         My97DatePicker::render();
@@ -59,7 +59,9 @@ class Win_signup_actions
     public static function store()
     {
         global $xoopsDB;
-
+        if (!$_SESSION['win_signup_adm']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "您沒有權限使用此功能");
+        }
         //XOOPS表單安全檢查
         Utility::xoops_security_check();
 
@@ -70,15 +72,25 @@ class Win_signup_actions
         }
 
         $sql = "insert into `" . $xoopsDB->prefix("win_signup_actions") . "` (
-        `欄位1`,
-        `欄位2`,
-        `欄位3`
+            `title`,
+            `detail`,
+            `action_date`,
+            `end_date`,
+            `number`,
+            `setup`,
+            `uid`,
+            `enable`
         ) values(
-        '{$欄位1值}',
-        '{$欄位2值}',
-        '{$欄位3值}'
+            '{$title}',
+            '{$detail}',
+            '{$action_date}',
+            '{$end_date}',
+            '{$number}',
+            '{$setup}',
+            '{$uid}',
+            '{$enable}'
         )";
-        $xoopsDB->query($sql) or Utility::web_error($sql, __FILE__, __LINE__);
+        $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
 
         //取得最後新增資料的流水編號
         $id = $xoopsDB->getInsertId();
