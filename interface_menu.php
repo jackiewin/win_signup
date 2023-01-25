@@ -1,5 +1,5 @@
 <?php
-//判斷是否對該模組有管理權限 $_SESSION['tad_signup_adm']
+//判斷是否對該模組有管理權限 $_SESSION['win_signup_adm']
 $is_admin = basename(__DIR__) . '_adm';
 if (!isset($_SESSION[$is_admin])) {
     $_SESSION[$is_admin] = ($xoopsUser) ? $xoopsUser->isAdmin() : false;
