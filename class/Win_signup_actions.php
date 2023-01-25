@@ -6,6 +6,7 @@ namespace XoopsModules\Win_signup;
 
 use XoopsModules\Tadtools\FormValidator;
 use XoopsModules\Tadtools\Utility;
+use XoopsModules\Tadtools\My97DatePicker;
 
 class Win_signup_actions
 {
@@ -21,7 +22,7 @@ class Win_signup_actions
     //編輯表單
     public static function create($id = '')
     {
-        global $xoopsTpl;
+        global $xoopsTpl, $xoopsUser;
 
         //抓取預設值
         $db_values = empty($id) ? [] : self::get($id);
@@ -43,6 +44,11 @@ class Win_signup_actions
         $token = new \XoopsFormHiddenToken();
         $token_form = $token->render();
         $xoopsTpl->assign("token_form", $token_form);
+
+        $uid = $xoopsUser->uid();
+        $xoopsTpl->assign("uid", $uid);
+
+        My97DatePicker::render();
     }
 
     //新增資料
@@ -154,11 +160,11 @@ class Win_signup_actions
     }
 
     //取得所有資料陣列
-    public static function get_all($only_enable=true, $auto_key = false)
+    public static function get_all($only_enable = true, $auto_key = false)
     {
         global $xoopsDB;
         $myts = \MyTextSanitizer::getInstance();
-        $and_enable = $only_enable? "and `enable` = '1' and `action_date` >= now()": "";
+        $and_enable = $only_enable ? "and `enable` = '1' and `action_date` >= now()" : "";
         $sql = "select * from `" . $xoopsDB->prefix("win_signup_actions") . "` where 1 $and_enable";
         $result = $xoopsDB->query($sql) or Utility::web_error($sql, __FILE__, __LINE__);
         $data_arr = [];
