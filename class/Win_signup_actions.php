@@ -71,6 +71,10 @@ class Win_signup_actions
             $$var_name = $myts->addSlashes($var_val);
         }
 
+        $uid = (int) $uid;
+        $number = (int) $number;
+        $enable = (int) $enable;
+
         $sql = "insert into `" . $xoopsDB->prefix("win_signup_actions") . "` (
             `title`,
             `detail`,
@@ -111,12 +115,15 @@ class Win_signup_actions
 
         $myts = \MyTextSanitizer::getInstance();
         foreach ($data as $col_name => $col_val) {
-            $col_val = $myts->htmlSpecialChars($col_val);
 
             //過濾讀出的變數值 displayTarea($text, $html=0, $smiley=1, $xcode=1, $image=1, $br=1);
             // $data['大量文字欄'] = $myts->displayTarea($data['大量文字欄'], 0, 1, 0, 1, 1);
             // $data['HTML文字欄'] = $myts->displayTarea($data['HTML文字欄'], 1, 0, 0, 0, 0);
-
+            if ($col_name == 'detail') {
+                $col_val = $myts->displayTarea($col_val, 0, 1, 0, 1, 1);
+            } else {
+                $col_val = $myts->htmlSpecialChars($col_val);
+            }
             $xoopsTpl->assign($col_name, $col_val);
         }
     }
@@ -125,7 +132,9 @@ class Win_signup_actions
     public static function update($id = '')
     {
         global $xoopsDB;
-
+        if (!$_SESSION['win_signup_adm']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "您沒有權限使用此功能");
+        }
         //XOOPS表單安全檢查
         Utility::xoops_security_check();
 
@@ -135,10 +144,19 @@ class Win_signup_actions
             $$var_name = $myts->addSlashes($var_val);
         }
 
+        $uid = (int) $uid;
+        $number = (int) $number;
+        $enable = (int) $enable;
+
         $sql = "update `" . $xoopsDB->prefix("win_signup_actions") . "` set
-        `欄位1` = '{$欄位1值}',
-        `欄位2` = '{$欄位2值}',
-        `欄位3` = '{$欄位3值}'
+        `title` = '{$title}',
+        `detail` = '{$detail}',
+        `action_date` = '{$action_date}',
+        `end_date` = '{$end_date}',
+        `number` = '{$number}',
+        `setup` = '{$setup}',
+        `uid` = '{$uid}',
+        `enable` = '{$enable}'
         where `id` = '$id'";
         $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
 

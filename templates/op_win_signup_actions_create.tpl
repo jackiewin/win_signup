@@ -77,6 +77,7 @@
     </div>
     <{$token_form}>
         <input type="hidden" name="uid" value="<{$uid}>">
+        <input type="hidden" name="id" value="<{$id}>">
         <input type="hidden" name="op" value="<{$next_op}>">
         <div class="bar">
             <button type="submit" class="btn btn-primary">
