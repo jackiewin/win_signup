@@ -53,7 +53,7 @@ switch ($op) {
 
     //新增報名表單
     case 'win_signup_data_create':
-        Win_signup_data::create();
+        Win_signup_data::create($action_id);
         break;
 
     default:

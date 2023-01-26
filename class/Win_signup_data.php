@@ -6,6 +6,7 @@ namespace XoopsModules\Win_signup;
 
 use XoopsModules\Tadtools\FormValidator;
 use XoopsModules\Tadtools\Utility;
+use XoopsModules\Win_signup\Win_signup_actions;
 
 class Win_signup_data
 {
@@ -19,9 +20,9 @@ class Win_signup_data
     }
 
     //編輯表單
-    public static function create($id = '')
+    public static function create($action_id, $id = '')
     {
-        global $xoopsTpl;
+        global $xoopsTpl, $xoopsUser;
 
         //抓取預設值
         $db_values = empty($id) ? [] : self::get($id);
@@ -43,6 +44,26 @@ class Win_signup_data
         $token = new \XoopsFormHiddenToken();
         $token_form = $token->render();
         $xoopsTpl->assign("token_form", $token_form);
+
+        $action = Win_signup_actions::get($action_id);
+
+        if (time() > strtotime($actions['end_date'])) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "已報名截止，無法再進行報名或修改報名");
+        }
+
+        $myts = \MyTextSanitizer::getInstance();
+        foreach ($action as $col_name => $col_val) {
+            if ($col_name == 'detail') {
+                $col_val = $myts->displayTarea($col_val, 0, 1, 0, 1, 1);
+            } else {
+                $col_val = $myts->htmlSpecialChars($col_val);
+            }
+            $action[$col_name] = $col_val;
+        }
+        $xoopsTpl->assign("action", $action);
+
+        $uid = $xoopsUser ? $xoopsUser->uid() : 0;
+        $xoopsTpl->assign("uid", $uid);
     }
 
     //新增資料
