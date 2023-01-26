@@ -35,8 +35,8 @@ $modversion['paypal'][] = [
 $modversion['system_menu'] = 1;
 
 //---模組資料表架構---//
- $modversion['sqlfile']['mysql'] = 'sql/mysql.sql';
- $modversion['tables'] = ['win_signup_actions'];
+$modversion['sqlfile']['mysql'] = 'sql/mysql.sql';
+$modversion['tables'] = ['win_signup_actions', 'win_signup_data', 'win_signup_data_center'];
 
 //---後台管理介面設定---//
 $modversion['hasAdmin'] = 1;
