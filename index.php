@@ -24,7 +24,7 @@ switch ($op) {
         Win_signup_actions::create();
         break;
 
-    //新增資料
+    //新增活動資料
     case 'win_signup_actions_store':
         $id = Win_signup_actions::store();
         // header("location: {$_SERVER['PHP_SELF']}?id=$id");
@@ -54,6 +54,18 @@ switch ($op) {
     //新增報名表單
     case 'win_signup_data_create':
         Win_signup_data::create($action_id);
+        break;
+
+    //新增報名資料
+    case 'win_signup_data_store':
+        $id = Win_signup_data::store();
+        // header("location: {$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id");
+        redirect_header("{$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id", 3, "成功報名活動！");
+        break;
+
+    //顯示報名表
+    case 'win_signup_data_show':
+        Win_signup_data::show($id);
         break;
 
     default:
