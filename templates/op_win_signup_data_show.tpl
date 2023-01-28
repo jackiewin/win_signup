@@ -33,9 +33,10 @@
     <{/foreach}>
 </table>
 
-<{if $smarty.session.tad_signup_adm || $uid == $now_uid}>
+<{if $smarty.session.win_signup_adm || $uid == $now_uid}>
     <div class="bar">
-        <a href="index.php?op=tad_signup_data_destroy&action_id=<{$action_id}>" class="btn btn-danger"><i class="fa fa-times" aria-hidden="true"></i> 取消報名</a>
-        <a href="index.php?op=tad_signup_data_edit&id=<{$id}>&action_id=<{$action_id}>" class="btn btn-warning"><i class="fa fa-pencil" aria-hidden="true"></i> 修改報名資料</a>
+        <a href="index.php?op=win_signup_data_destroy&id=<{$id}>&action_id=<{$action_id}>" class="btn btn-danger"><i class="fa fa-times" aria-hidden="true"></i> 取消報名</a>
+        <a href="index.php?op=win_signup_data_edit&id=<{$id}>&action_id=<{$action_id}>" class="btn btn-warning"><i class="fa fa-pencil" aria-hidden="true"></i> 修改報名資料</a>
+        <a href="index.php?op=win_signup_data_create&action_id=<{$action.id}>" class="btn btn-sm btn-info"><i class="fa fa-plus" aria-hidden="true"></i> 繼續報名</a>
     </div>
 <{/if}>

@@ -15,6 +15,7 @@ require_once XOOPS_ROOT_PATH . '/header.php';
 $op = Request::getString('op');
 $id = Request::getInt('id');
 $action_id = Request::getInt('action_id');
+$accept = Request::getInt('accept');
 
 /*-----------執行動作判斷區----------*/
 switch ($op) {
@@ -67,6 +68,32 @@ switch ($op) {
     case 'win_signup_data_show':
         Win_signup_data::show($id);
         break;
+
+    //修改報名表單
+    case 'win_signup_data_edit':
+        Win_signup_data::create($action_id, $id);
+        $op = 'win_signup_data_create';
+        break;
+
+    //更新報名資料
+    case 'win_signup_data_update':
+        Win_signup_data::update($id);
+        // header("location: {$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id");
+        redirect_header($_SERVER['PHP_SELF'] . "?op=win_signup_data_show&id=$id", 3, "成功修改報名資料！");
+        exit;
+
+    //刪除報名資料
+    case 'win_signup_data_destroy':
+        Win_signup_data::destroy($id);
+        // header("location: {$_SERVER['PHP_SELF']}?id=$action_id");
+        redirect_header($_SERVER['PHP_SELF'] . "?id=$action_id", 3, "成功刪除報名資料！");
+        exit;
+
+    //更改錄取狀態
+    case 'win_signup_data_accept':
+        Win_signup_data::accept($id, $accept);
+        redirect_header($_SERVER['PHP_SELF'] . "?id=$action_id", 3, "成功設定錄取狀態！");
+        exit;
 
     default:
         if (empty($id)) {

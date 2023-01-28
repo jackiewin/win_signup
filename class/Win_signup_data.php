@@ -4,7 +4,9 @@
 
 namespace XoopsModules\Win_signup;
 
+use XoopsModules\Tadtools\BootstrapTable;
 use XoopsModules\Tadtools\FormValidator;
+use XoopsModules\Tadtools\SweetAlert;
 use XoopsModules\Tadtools\TadDataCenter;
 use XoopsModules\Tadtools\Utility;
 use XoopsModules\Win_signup\Win_signup_actions;
@@ -12,11 +14,11 @@ use XoopsModules\Win_signup\Win_signup_actions;
 class Win_signup_data
 {
     //列出所有資料
-    public static function index()
+    public static function index($action_id)
     {
         global $xoopsTpl;
 
-        $all_data = self::get_all();
+        $all_data = self::get_all($action_id);
         $xoopsTpl->assign('all_data', $all_data);
     }
 
@@ -50,6 +52,8 @@ class Win_signup_data
 
         if (time() > strtotime($action['end_date'])) {
             redirect_header($_SERVER['PHP_SELF'], 3, "已報名截止，無法再進行報名或修改報名");
+        } elseif (count($action['signup']) >= $action['number']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "人數已滿，無法再進行報名");
         }
 
         $myts = \MyTextSanitizer::getInstance();
@@ -65,8 +69,8 @@ class Win_signup_data
 
         $uid = $xoopsUser ? $xoopsUser->uid() : 0;
         $xoopsTpl->assign("uid", $uid);
-
         $TadDataCenter = new TadDataCenter('win_signup');
+        $TadDataCenter->set_col('id', $id);
         $signup_form = $TadDataCenter->strToForm($action['setup']);
         $xoopsTpl->assign("signup_form", $signup_form);
     }
@@ -112,7 +116,7 @@ class Win_signup_data
     //以流水號秀出某筆資料內容
     public static function show($id = '')
     {
-        global $xoopsTpl, $xoopsUser;
+        global $xoopsDB, $xoopsTpl, $xoopsUser;
 
         if (empty($id)) {
             return;
@@ -146,12 +150,15 @@ class Win_signup_data
 
         $now_uid = $xoopsUser ? $xoopsUser->uid() : 0;
         $xoopsTpl->assign("now_uid", $now_uid);
+
+        $SweetAlert = new SweetAlert();
+        $SweetAlert->render("del_data", "index.php?op=tad_signup_data_destroy&action_id={$action_id}&id=", 'id');
     }
 
     //更新某一筆資料
     public static function update($id = '')
     {
-        global $xoopsDB;
+        global $xoopsDB, $xoopsUser;
 
         //XOOPS表單安全檢查
         Utility::xoops_security_check();
@@ -161,13 +168,21 @@ class Win_signup_data
         foreach ($_POST as $var_name => $var_val) {
             $$var_name = $myts->addSlashes($var_val);
         }
+        $action_id = (int) $action_id;
+        $uid = (int) $uid;
+
+        $now_uid = $xoopsUser ? $xoopsUser->uid() : 0;
 
         $sql = "update `" . $xoopsDB->prefix("win_signup_data") . "` set
-        `欄位1` = '{$欄位1值}',
-        `欄位2` = '{$欄位2值}',
-        `欄位3` = '{$欄位3值}'
-        where `id` = '$id'";
-        $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
+        `signup_date` = now()
+        where `id` = '$id' and `uid` = '$now_uid'";
+        if ($xoopsDB->queryF($sql)) {
+            $TadDataCenter = new TadDataCenter('win_signup');
+            $TadDataCenter->set_col('id', $id);
+            $TadDataCenter->saveData();
+        } else {
+            Utility::web_error($sql, __FILE__, __LINE__);
+        }
 
         return $id;
     }
@@ -175,15 +190,23 @@ class Win_signup_data
     //刪除某筆資料資料
     public static function destroy($id = '')
     {
-        global $xoopsDB;
+        global $xoopsDB, $xoopsUser;
 
         if (empty($id)) {
             return;
         }
 
+        $now_uid = $xoopsUser ? $xoopsUser->uid() : 0;
+
         $sql = "delete from `" . $xoopsDB->prefix("win_signup_data") . "`
-        where `id` = '{$id}'";
-        $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
+        where `id` = '{$id}' and `uid`='$now_uid'";
+        if ($xoopsDB->queryF($sql)) {
+            $TadDataCenter = new TadDataCenter('win_signup');
+            $TadDataCenter->set_col('id', $id);
+            $TadDataCenter->delData();
+        } else {
+            Utility::web_error($sql, __FILE__, __LINE__);
+        }
     }
 
     //以流水號取得某筆資料
@@ -203,20 +226,28 @@ class Win_signup_data
     }
 
     //取得所有資料陣列
-    public static function get_all($auto_key = false)
+    public static function get_all($action_id = '', $uid = '', $auto_key = false)
     {
-        global $xoopsDB;
+        global $xoopsDB, $xoopsUser;
         $myts = \MyTextSanitizer::getInstance();
 
-        $sql = "select * from `" . $xoopsDB->prefix("win_signup_data") . "` where 1 ";
+        if ($action_id) {
+            $sql = "select * from `" . $xoopsDB->prefix("win_signup_data") . "` where `action_id`='$action_id' order by `signup_date`";
+        } else {
+            if (!$_SESSION['win_signup_adm'] or !$uid) {
+                $uid = $xoopsUser ? $xoopsUser->uid() : 0;
+            }
+            $sql = "select * from `" . $xoopsDB->prefix("win_signup_data") . "` where `uid`='$uid' order by `signup_date`";
+        }
+
         $result = $xoopsDB->query($sql) or Utility::web_error($sql, __FILE__, __LINE__);
         $data_arr = [];
+        $TadDataCenter = new TadDataCenter('win_signup');
         while ($data = $xoopsDB->fetchArray($result)) {
 
-            // $data['文字欄'] = $myts->htmlSpecialChars($data['文字欄']);
-            // $data['大量文字欄'] = $myts->displayTarea($data['大量文字欄'], 0, 1, 0, 1, 1);
-            // $data['HTML文字欄'] = $myts->displayTarea($data['HTML文字欄'], 1, 0, 0, 0, 0);
-            // $data['數字欄'] = (int) $data['數字欄'];
+            $TadDataCenter->set_col('id', $data['id']);
+            $data['tdc'] = $TadDataCenter->getData();
+            $data['action'] = Win_signup_actions::get($data['action_id']);
 
             if ($_SESSION['api_mode'] or $auto_key) {
                 $data_arr[] = $data;
@@ -225,6 +256,34 @@ class Win_signup_data
             }
         }
         return $data_arr;
+    }
+
+    // 查詢某人的報名紀錄
+    public static function my($uid)
+    {
+        global $xoopsTpl, $xoopsUser;
+
+        $my_signup = self::get_all(null, $uid);
+        $xoopsTpl->assign('my_signup', $my_signup);
+        BootstrapTable::render();
+    }
+
+    // 更改錄取狀態
+    public static function accept($id, $accept)
+    {
+        global $xoopsDB;
+
+        if (!$_SESSION['win_signup_adm']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "您沒有權限使用此功能");
+        }
+
+        $id = (int) $id;
+        $accept = (int) $accept;
+
+        $sql = "update `" . $xoopsDB->prefix("Win_signup_data") . "` set
+        `accept` = '$accept'
+        where `id` = '$id'";
+        $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
     }
 
 }
