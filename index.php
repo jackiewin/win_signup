@@ -95,6 +95,12 @@ switch ($op) {
         redirect_header($_SERVER['PHP_SELF'] . "?id=$action_id", 3, "成功設定錄取狀態！");
         exit;
 
+    // 複製活動
+    case 'win_signup_actions_copy':
+        $new_id = Win_signup_actions::copy($id);
+        header("location: {$_SERVER['PHP_SELF']}?op=win_signup_actions_edit&id=$new_id");
+        exit;
+
     default:
         if (empty($id)) {
             Win_signup_actions::index();

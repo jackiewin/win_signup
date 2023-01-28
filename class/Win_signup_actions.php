@@ -114,19 +114,9 @@ class Win_signup_actions
         }
 
         $id = (int) $id;
-        $data = self::get($id);
+        $data = self::get($id, true);
 
-        $myts = \MyTextSanitizer::getInstance();
         foreach ($data as $col_name => $col_val) {
-
-            //過濾讀出的變數值 displayTarea($text, $html=0, $smiley=1, $xcode=1, $image=1, $br=1);
-            // $data['大量文字欄'] = $myts->displayTarea($data['大量文字欄'], 0, 1, 0, 1, 1);
-            // $data['HTML文字欄'] = $myts->displayTarea($data['HTML文字欄'], 1, 0, 0, 0, 0);
-            if ($col_name == 'detail') {
-                $col_val = $myts->displayTarea($col_val, 0, 1, 0, 1, 1);
-            } else {
-                $col_val = $myts->htmlSpecialChars($col_val);
-            }
             $xoopsTpl->assign($col_name, $col_val);
         }
 
@@ -194,7 +184,7 @@ class Win_signup_actions
     }
 
     //以流水號取得某筆資料
-    public static function get($id = '')
+    public static function get($id = '', $filter = false)
     {
         global $xoopsDB;
 
@@ -206,6 +196,12 @@ class Win_signup_actions
         where `id` = '{$id}'";
         $result = $xoopsDB->query($sql) or Utility::web_error($sql, __FILE__, __LINE__);
         $data = $xoopsDB->fetchArray($result);
+        if ($filter) {
+            $myts = \MyTextSanitizer::getInstance();
+            $data['detail'] = $myts->displayTarea($data['detail'], 0, 1, 0, 1, 1);
+            $data['setup'] = $myts->displayTarea($data['setup'], 0, 1, 0, 1, 1);
+            $data['title'] = $myts->htmlSpecialChars($data['title']);
+        }
         return $data;
     }
 
@@ -234,4 +230,42 @@ class Win_signup_actions
         return $data_arr;
     }
 
+    //複製活動
+    public static function copy($id)
+    {
+        global $xoopsDB, $xoopsUser;
+        if (!$_SESSION['win_signup_adm']) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "您沒有權限使用此功能");
+        }
+
+        $action = self::get($id);
+        $uid = $xoopsUser->uid();
+        $end_date = date('Y-m-d 17:30:00', strtotime('+2 weeks'));
+        $action_date = date('Y-m-d 09:00:00', strtotime('+16 days'));
+
+        $sql = "insert into `" . $xoopsDB->prefix("win_signup_actions") . "` (
+          `title`,
+          `detail`,
+          `action_date`,
+          `end_date`,
+          `number`,
+          `setup`,
+          `uid`,
+          `enable`
+          ) values(
+          '{$action['title']}_copy',
+          '{$action['detail']}',
+          '{$action_date}',
+          '{$end_date}',
+          '{$action['number']}',
+          '{$action['setup']}',
+          '{$uid}',
+          '0'
+          )";
+        $xoopsDB->queryF($sql) or Utility::web_error($sql, __FILE__, __LINE__);
+
+        //取得最後新增資料的流水編號
+        $id = $xoopsDB->getInsertId();
+        return $id;
+    }
 }

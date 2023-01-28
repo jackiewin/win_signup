@@ -27,9 +27,12 @@ class Win_signup_data
     {
         global $xoopsTpl, $xoopsUser;
 
+        $uid = $_SESSION['win_signup_adm'] ? null : $xoopsUser->uid();
         //抓取預設值
-        $db_values = empty($id) ? [] : self::get($id);
-
+        $db_values = empty($id) ? [] : self::get($id, $uid);
+        if ($id and empty($db_values)) {
+            redirect_header($_SERVER['PHP_SELF'] . "?id={$action_id}", 3, "查無報名無資料，無法修改");
+        }
         foreach ($db_values as $col_name => $col_val) {
             $$col_name = $col_val;
             $xoopsTpl->assign($col_name, $col_val);
@@ -48,7 +51,7 @@ class Win_signup_data
         $token_form = $token->render();
         $xoopsTpl->assign("token_form", $token_form);
 
-        $action = Win_signup_actions::get($action_id);
+        $action = Win_signup_actions::get($action_id, true);
 
         if (time() > strtotime($action['end_date'])) {
             redirect_header($_SERVER['PHP_SELF'], 3, "已報名截止，無法再進行報名或修改報名");
@@ -56,15 +59,6 @@ class Win_signup_data
             redirect_header($_SERVER['PHP_SELF'], 3, "人數已滿，無法再進行報名");
         }
 
-        $myts = \MyTextSanitizer::getInstance();
-        foreach ($action as $col_name => $col_val) {
-            if ($col_name == 'detail') {
-                $col_val = $myts->displayTarea($col_val, 0, 1, 0, 1, 1);
-            } else {
-                $col_val = $myts->htmlSpecialChars($col_val);
-            }
-            $action[$col_name] = $col_val;
-        }
         $xoopsTpl->assign("action", $action);
 
         $uid = $xoopsUser ? $xoopsUser->uid() : 0;
@@ -122,8 +116,13 @@ class Win_signup_data
             return;
         }
 
+        $uid = $_SESSION['win_signup_adm'] ? null : $xoopsUser->uid();
+
         $id = (int) $id;
-        $data = self::get($id);
+        $data = self::get($id, $uid);
+        if (empty($data)) {
+            redirect_header($_SERVER['PHP_SELF'], 3, "查無報名資料，無法觀看");
+        }
 
         $myts = \MyTextSanitizer::getInstance();
         foreach ($data as $col_name => $col_val) {
@@ -137,15 +136,8 @@ class Win_signup_data
         $tdc = $TadDataCenter->getData();
         $xoopsTpl->assign('tdc', $tdc);
 
-        $action = Win_signup_actions::get($action_id);
-        foreach ($action as $col_name => $col_val) {
-            if ($col_name == 'detail') {
-                $col_val = $myts->displayTarea($col_val, 0, 1, 0, 1, 1);
-            } else {
-                $col_val = $myts->htmlSpecialChars($col_val);
-            }
-            $action[$col_name] = $col_val;
-        }
+        $action = Win_signup_actions::get($action_id, true);
+
         $xoopsTpl->assign("action", $action);
 
         $now_uid = $xoopsUser ? $xoopsUser->uid() : 0;
@@ -210,7 +202,7 @@ class Win_signup_data
     }
 
     //以流水號取得某筆資料
-    public static function get($id = '')
+    public static function get($id = '', $uid = '')
     {
         global $xoopsDB;
 
@@ -218,8 +210,10 @@ class Win_signup_data
             return;
         }
 
+        $and_uid = $uid ? "and `uid`='$uid'" : '';
+
         $sql = "select * from `" . $xoopsDB->prefix("win_signup_data") . "`
-        where `id` = '{$id}'";
+        where `id` = '{$id}' $and_uid";
         $result = $xoopsDB->query($sql) or Utility::web_error($sql, __FILE__, __LINE__);
         $data = $xoopsDB->fetchArray($result);
         return $data;
@@ -247,7 +241,7 @@ class Win_signup_data
 
             $TadDataCenter->set_col('id', $data['id']);
             $data['tdc'] = $TadDataCenter->getData();
-            $data['action'] = Win_signup_actions::get($data['action_id']);
+            $data['action'] = Win_signup_actions::get($data['action_id'], true);
 
             if ($_SESSION['api_mode'] or $auto_key) {
                 $data_arr[] = $data;
