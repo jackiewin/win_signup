@@ -60,7 +60,7 @@ switch ($op) {
     //新增報名資料
     case 'win_signup_data_store':
         $id = Win_signup_data::store();
-        // header("location: {$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id");
+        Win_signup_data::mail($id, 'store');
         redirect_header("{$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id", 3, "成功報名活動！");
         break;
 
@@ -78,20 +78,23 @@ switch ($op) {
     //更新報名資料
     case 'win_signup_data_update':
         Win_signup_data::update($id);
-        // header("location: {$_SERVER['PHP_SELF']}?op=win_signup_data_show&id=$id");
+        Win_signup_data::mail($id, 'update');
         redirect_header($_SERVER['PHP_SELF'] . "?op=win_signup_data_show&id=$id", 3, "成功修改報名資料！");
         exit;
 
     //刪除報名資料
     case 'win_signup_data_destroy':
+        $uid = $_SESSION['win_signup_adm'] ? null : $xoopsUser->uid();
+        $signup = Win_signup_data::get($id, $uid);
         Win_signup_data::destroy($id);
-        // header("location: {$_SERVER['PHP_SELF']}?id=$action_id");
+        Win_signup_data::mail($id, 'destroy', $signup);
         redirect_header($_SERVER['PHP_SELF'] . "?id=$action_id", 3, "成功刪除報名資料！");
         exit;
 
     //更改錄取狀態
     case 'win_signup_data_accept':
         Win_signup_data::accept($id, $accept);
+        Win_signup_data::mail($id, 'accept');
         redirect_header($_SERVER['PHP_SELF'] . "?id=$action_id", 3, "成功設定錄取狀態！");
         exit;
 
